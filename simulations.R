@@ -87,7 +87,7 @@ library(ggplot2)
 
 # initial distribution
 del <- c(0.5,0.5)
-tpm=matrix(c(0.9,0.1,0.05,0.95),ncol=2,byrow=T) # check this 
+tpm=matrix(c(0.8,0.2,0.15,0.85),ncol=2,byrow=T) # check this 
 
 # Set Observation parameters
 # check if these values make sense: Do they give an stationary process
@@ -95,8 +95,8 @@ tpm=matrix(c(0.9,0.1,0.05,0.95),ncol=2,byrow=T) # check this
 sigma1=1
 sigma2=1
 
-mu1=c(-1,0,0)
-mu2=c(1,1,0.3) 
+mu1=c(-2,0,0)
+mu2=c(2,1,0.1) 
 
 Mu=list(mu1,mu2)
 
@@ -109,6 +109,7 @@ set.seed(99999)
 # 1. simulate states
 states <- matrix(NA, nrow = Nsims, ncol = Nrep)
 
+
 for (j in 1:Nrep)
 {
 for (i in 1:Nsims)
@@ -120,7 +121,7 @@ for (i in 1:Nsims)
     states[i, j] <- sample(x = 1:2, size = 1, prob = tpm[states[i -1, j], ])
       }
     }
-}
+  }
 
 # 2. simulate observation process
 
@@ -131,47 +132,54 @@ for (s in 1:3) # for each overlap scenario
   AllS[[s]]=list()
   for (j in 1:3) # for each autorregresive str scenario
   {
-    AllS[[s]][[j]]=matrix(NA, nrow = Nsims,ncol=Nrep)
+  AllS[[s]][[j]]=matrix(NA, nrow = Nsims,ncol=Nrep)
+    
     
     for (i in 1:Nrep) # for each time series
     {
+  
       cs=states[1,i]
       AllS[[s]][[j]][1,i]=rnorm(1,mean = Mu[[cs]][s],sd=1) # first obs
+  
       for (k in 2:Nsims) # for each observation
       {
+        cs=states[k,i]
         mm=Mu[[cs]][s]+AllS[[s]][[j]][k-1]*alpha[j]
-        AllS[[s]][[j]][k,i]=mm+rnorm(1,mean = 0,sd=1) 
-      
-  }
-    }
+        AllS[[s]][[j]][k,i]=mm+rnorm(1,mean = 0,sd=1)
+  
       }
-    
-}
+  
+      }
 
+    
+      }
+  }
 
 
 # 3. Creation of the Data Frame with the simulated data
 States=as.factor(rep(as.vector(states),9))
 Nreps=as.factor(rep(rep(1:Nrep,each=Nsims),9))
-scenario=as.factor(c(rep('Low Overlap',3*Nrep*Nsims),rep('Medium Overlap',3*Nrep*Nsims),rep('High Overlap',3*Nrep*Nsims)))
-degreeC=as.factor(rep(rep(c('Low Ac','Mediun Ac','High Ac'),each=Nrep*Nsims),3))
+scenario=as.factor(c(rep('Low_Overlap',3*Nrep*Nsims),rep('Medium_Overlap',3*Nrep*Nsims),rep('High_Overlap',3*Nrep*Nsims)))
+degreeC=as.factor(rep(rep(c('Low_Ac','Medium_Ac','High_Ac'),each=Nrep*Nsims),3))
 Index=rep(1:Nsims,Nrep*9)
 Obs=c()
 for (i in 1:3)
 {
   for (j in 1:3)
   {
-    Obs=c(Obs,as.numeric(AllS[[i]][[j]]))  
+    Obs=c(Obs,as.numeric(AllS[[i]][[j]]))
   }
   
 }
 
 SimData=data.frame(States,Nreps,scenario,degreeC,Obs,Index)
 
+#SimData %>% filter(scenario=='Low_Overlap' & degreeC=='Low_Ac') %>% group_by(States) %>% summarize(mo=mean(Obs))
+
 
 ## plot some examples
 
-ggplot(SimData %>% filter(Nreps==1),aes(x=Index,y=Obs,color=States)) +
+ggplot(SimData %>% filter(Nreps==30),aes(x=Index,y=Obs,color=States)) +
   geom_line(aes(group=1))+theme_classic()+
   facet_grid(vars(degreeC),vars(scenario))
  
