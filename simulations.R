@@ -86,21 +86,24 @@ library(tidyverse)
 library(ggplot2)
 
 # initial distribution
-del <- c(0.5,0.5)
-tpm=matrix(c(0.8,0.2,0.15,0.85),ncol=2,byrow=T) # check this 
-
+del <- c(1,1,1)/3
+#tpm=matrix(c(0.98,0.01,0.01,0.005,0.99,0.005,0.005,0.015,0.98),ncol=3,byrow=T) # check this 
+m=length(del)
 # Set Observation parameters
 # check if these values make sense: Do they give an stationary process
 
 sigma1=1
 sigma2=1
+sigma3=1
 
 mu1=c(-2,0,0)
-mu2=c(2,1,0.1) 
+mu2=c(2,1,0.5) 
+mu3=c(4,2,1)
 
-Mu=list(mu1,mu2)
 
-alpha=c(0,0.5,.85) 
+Mu=list(mu1,mu2,mu3)
+
+alpha=c(0,0.5,.8) 
 
 Nsims=500
 Nrep=50
@@ -115,10 +118,10 @@ for (j in 1:Nrep)
 for (i in 1:Nsims)
 {
   if (i == 1) {
-    states[1, j] <- sample(x = 1:2, size = 1, prob = del) 
+    states[1, j] <- sample(x = 1:m, size = 1, prob = del) 
   }
   else {
-    states[i, j] <- sample(x = 1:2, size = 1, prob = tpm[states[i -1, j], ])
+    states[i, j] <- sample(x = 1:m, size = 1, prob = tpm[states[i -1, j], ])
       }
     }
   }
