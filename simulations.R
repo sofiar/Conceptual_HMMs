@@ -79,7 +79,6 @@
 ##
 
 
-#### What about the parameters of the tpm? 
 
 ###############################################################################
 library(tidyverse)
@@ -96,10 +95,13 @@ sigma1=1
 sigma2=1
 sigma3=1
 
-mu1=c(-2,0,0)
-mu2=c(2,1,0.5) 
-mu3=c(4,2,1)
+# mu1=c(-2,0,0)
+# mu2=c(2,1,0.5)
+# mu3=c(4,2,1)
 
+mu1=matrix(c(-2,-1,-0.5,-1,-0.5,-0.25,-0.4,-0.2,-0.1),ncol=3) # byrow Overlap degree, by column ar degree
+mu2=matrix(rep(0,9),ncol=3)
+mu3=matrix(c(2,1,0.5,1,0.5,0.25,0.4,0.2,0.1),ncol=3)
 
 Mu=list(mu1,mu2,mu3)
 
@@ -111,7 +113,6 @@ Nrep=50
 set.seed(99999)
 # 1. simulate states
 states <- matrix(NA, nrow = Nsims, ncol = Nrep)
-
 
 for (j in 1:Nrep)
 {
@@ -142,12 +143,12 @@ for (s in 1:3) # for each overlap scenario
     {
   
       cs=states[1,i]
-      AllS[[s]][[j]][1,i]=rnorm(1,mean = Mu[[cs]][s],sd=1) # first obs
+      AllS[[s]][[j]][1,i]=rnorm(1,mean = Mu[[cs]][s,j],sd=1) # first obs
   
       for (k in 2:Nsims) # for each observation
       {
         cs=states[k,i]
-        mm=Mu[[cs]][s]+AllS[[s]][[j]][k-1]*alpha[j]
+        mm=Mu[[cs]][s,j]+AllS[[s]][[j]][k-1]*alpha[j]
         AllS[[s]][[j]][k,i]=mm+rnorm(1,mean = 0,sd=1)
   
       }
