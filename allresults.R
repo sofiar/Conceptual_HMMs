@@ -2,9 +2,10 @@
 source('ExtraFunctions.R')
 library(gridExtra)
 library(cowplot)
+library(ggpubr)
 
 ### All combinations 
-## Change depence degree in the state process
+## Change dependence degree in the state process
 tpm.list=list()
 tpm.list[[1]]=matrix(c(0.7,0.2,0.1,0.1,0.85,0.05,0.1,0.1,0.8),ncol=3,byrow=T) ## Low autocorrelation
 tpm.list[[2]]=matrix(c(0.9,0.05,0.05,0.02,0.93,0.05,0.06,0.05,0.89),ncol=3,byrow=T) ## Medium autocorrelation
@@ -20,11 +21,11 @@ for (ind in 1:3)
   source('hmmclassifications.R')
   
   ### combine results and plots
+  Res.HMMs$Model=as.factor(Res.HMMs$Model)
   levels(Res.HMMs$Model)=c('HMM-FB','HMM-Viterbi')
   
   Res.HMMs=Res.HMMs %>% relocate(names(Res.acc))
   All.res=rbind(Res.HMMs,Res.acc)
-  
   write.csv(All.res,file=paste('ResSim1D_',as.character(ind),'.csv',sep=''))
   
   print(ind)
@@ -54,16 +55,26 @@ all=cbind(rbind(ResSim1D_1,ResSim1D_2,ResSim1D_3),DegreeC.state)
 #Plots
 ## Accuracy
 
-Acc1=ggplot(ResSim1D_1)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme(legend.position = "none", axis.text.x=element_blank())
-Acc2=ggplot(ResSim1D_2)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme(legend.position = "none", axis.text.x=element_blank())
-Acc3=ggplot(ResSim1D_3)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme( axis.text.x=element_blank())
+Acc1=ggplot(ResSim1D_1)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+
+  theme(legend.position = "none", axis.text.x=element_blank())+ylim(c(0,1))+ylab('0-1 Loss')+xlab('')
+Acc2=ggplot(ResSim1D_2)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+
+  theme_bw()+theme(legend.position = "bottom", axis.text.x=element_blank(),axis.text.y=element_blank())+
+  ylim(c(0,1))+ylab('')
+Acc3=ggplot(ResSim1D_3)+geom_boxplot(aes(Model,zero.one.loss,col=Model))+facet_wrap(~Scenario+DegreeC)+
+  theme_bw()+theme(legend.position = "none",axis.text.x=element_blank(),axis.text.y=element_blank())+ylim(c(0,1))+ylab('')+xlab('')
 Acc1
 Acc2
 Acc3
 
-CEplot1=ggplot(ResSim1D_1 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme(legend.position = "none", axis.text.x=element_blank())
-CEplot2=ggplot(ResSim1D_2 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme(legend.position = "none", axis.text.x=element_blank())
-CEplot3=ggplot(ResSim1D_3 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+theme( axis.text.x=element_blank())
+CEplot1=ggplot(ResSim1D_1 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+
+  geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+
+  theme(legend.position = "none", axis.text.x=element_blank())+xlab('')+ylim(c(0,300))
+CEplot2=ggplot(ResSim1D_2 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+ylim(c(0,300))+ylab('')+
+  geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+
+  theme(legend.position = "none", axis.text.x=element_blank(), axis.text.y=element_blank())
+CEplot3=ggplot(ResSim1D_3 %>% filter(Model!="KNN" & Model!='HMM-Viterbi'))+
+  geom_boxplot(aes(Model,CE,col=Model))+facet_wrap(~Scenario+DegreeC)+theme_bw()+ylim(c(0,300))+
+  theme( axis.text.x=element_blank(),axis.text.y=element_blank())+ylab('')+xlab('')
 CEplot1
 CEplot2
 CEplot3
@@ -77,11 +88,14 @@ CTplot2
 CTplot3
 
 
-acc.plots=plot_grid(Acc1, Acc2, Acc3, labels=c("A", "B", "C"), ncol = 3, rel_widths =  c(1.5, 1.5,2))
-#ggsave('all_AccIndex.pdf',acc.plots,width = 16,height = 9)
 
-CE.plots=plot_grid(CEplot1,CEplot2, CEplot3, labels=c("A", "B", "C"), ncol = 3, rel_widths =  c(1.5, 1.5,2))
-#ggsave('all_CEIndex.pdf',CE.plots,width = 16,height = 9)
+acc.plots=ggarrange(Acc1,Acc2,Acc3,labels = c("A", "B","C"), common.legend = TRUE, legend = "bottom",ncol=3)
+#ggsave('all_AccIndex.pdf',acc.plots,width = 14,height = 9)
+#plot_grid(Acc1, Acc2, Acc3, labels=c("A", "B", "C"), ncol = 3, rel_widths =  c(1.5, 1.5,2))
+
+
+CE.plots=ggarrange(CEplot1,CEplot2,CEplot3,labels = c("A", "B","C"), common.legend = TRUE, legend = "bottom",ncol=3)
+#ggsave('all_CEIndex.pdf',CE.plots,width = 14,height = 9)
 
 CT.plots=plot_grid(CTplot1, CTplot2, CTplot3, labels=c("A", "B", "C"), ncol = 3, rel_widths =  c(1.5, 1.5,2))
 #ggsave('all_CTIndex.pdf',CT.plots,width = 16,height = 9)
