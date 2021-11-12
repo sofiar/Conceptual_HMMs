@@ -27,18 +27,36 @@ for (jj in 1:3)
 for (j in 1:3)
 {
 AccE.LDA=numeric(Nrep)
+AccE.QDA=numeric(Nrep)
 AccE.KNN=numeric(Nrep)
 AccE.GLM=numeric(Nrep)
 
 CE.LDA=numeric(Nrep)
 CE.GLM=numeric(Nrep)
 CE.KNN=rep(NA,Nrep)
+CE.QDA=rep(NA,Nrep)
 
 CT.LDA=numeric(Nrep)
+CT.QDA=numeric(Nrep)
 CT.GLM=numeric(Nrep)
 CT.KNN=numeric(Nrep)
+CE.QDA=rep(NA,Nrep)
 
 Data=SimData %>% dplyr::filter(scenario==scenario.it[j] & degreeC==degreeC.it[jj])
+
+## select k by cv 
+ks=seq(1,300,by=25)
+cvPreds=matrix(NA,Nrep,length(ks))
+for (i in 1:Nrep)
+{
+test=Data %>% filter(Nreps==i)
+train=Data %>% filter(Nreps!=i)
+for (t in 1:length(ks))
+{
+  knn.P=knn(as.matrix(train$Obs), as.matrix(test$Obs),train$States ,k=ks[t])  
+  cvPreds[i,t]=mean(knn.P==test$States)
+}
+}
 
 for (i in 1:Nrep)
 {
@@ -63,9 +81,24 @@ for (i in 1:Nrep)
   CE.LDA[i]=cross.entropy(t(post2),test$States,quienes)
   CT.LDA[i]=consecutives.true(test$States==predictions)
   
+  # fit qda model
+  qdafit = qda(States~Obs, data = train)
+  pred=predict(qdafit,test)
+  predictions=pred$class
+  post2= pred$posterior
+  
+  post=numeric(length(test$States))
+  
+  # quantify error
+  AccE.QDA[i]=mean(test$States==predictions)
+  quienes=which(test$States==predictions)
+  
+  CE.QDA[i]=cross.entropy(t(post2),test$States,quienes)
+  CT.QDA[i]=consecutives.true(test$States==predictions)
   
   #Knn
-  knn.preds=knn(as.matrix(train$Obs), as.matrix(test$Obs),train$States ,k=60)  ## select k with CV
+  ki=which.max(cvPreds[i,])
+  knn.preds=knn(as.matrix(train$Obs), as.matrix(test$Obs),train$States ,k=ks[ki])  ## select k with CV
   AccE.KNN[i]=mean(knn.preds==test$States)
   CT.KNN[i]=consecutives.true(knn.preds==test$States)
   
@@ -105,13 +138,13 @@ for (i in 1:Nrep)
 }
 
 
-Scenario=c(Scenario,rep(scenario.it[j],Nrep*3))
-DegreeC=c(DegreeC,rep(degreeC.it[jj],Nrep*3))
-zero.one.loss=c(zero.one.loss,c(AccE.LDA,AccE.KNN,AccE.GLM))
-CE=c(CE,c(CE.LDA,CE.KNN,CE.GLM))
-CT=c(CT,c(CT.LDA,CT.KNN,CT.GLM))
+Scenario=c(Scenario,rep(scenario.it[j],Nrep*4))
+DegreeC=c(DegreeC,rep(degreeC.it[jj],Nrep*4))
+zero.one.loss=c(zero.one.loss,c(AccE.LDA,AccE.QDA,AccE.KNN,AccE.GLM))
+CE=c(CE,c(CE.LDA,CE.QDA,CE.KNN,CE.GLM))
+CT=c(CT,c(CT.LDA,CT.QDA,CT.KNN,CT.GLM))
 
-Model=c(Model,c(rep("LDA",Nrep),rep('KNN',Nrep),rep('GLM',Nrep)))
+Model=c(Model,c(rep("LDA",Nrep),rep("QDA",Nrep),rep('KNN',Nrep),rep('LR',Nrep)))
 
 if (is.na(sum(CE.GLM)))
 {
